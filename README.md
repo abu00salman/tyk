@@ -8,4 +8,5 @@ Test Your Knowledge
 	•	رسومات محسّنة بدقة عالية مع الحفاظ على الهوية الأصلية
 	•	الأصوات الأصليةوجمالها
 
-رابط اللعبة : abu00salman.github.io/tyk
+
+  https://abu00salman.github.io/tyk
