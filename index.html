@@ -357,13 +357,13 @@ const Chooser={
       text(L('sub'),GW/2,top+122,{size:fz(L('sub'),26,FONT,0,GW-30),color:'#c9cdf2',align:'center'});
       const y1=top+170,avail=GH-y1-110,ch=Math.max(200,Math.min(300,(avail-30)/2));
       this.items().forEach((it,i)=>this.card(it,26,y1+i*(ch+30),GW-52,ch,true));
-      drawRS(GW/2,GH-104,46);
+      drawRS(GW/2,GH-100,38);
       text(L('touch'),GW/2,GH-28,{size:22,color:'rgba(220,224,255,.65)',align:'center'});
     }else{
       text(L('title'),W/2,90,{size:fz(L('title'),54,TF(),1,W-60),bold:true,color:tg(40,96),shadow:'rgba(0,0,0,.65)',align:'center',font:TF()});
       {const s2=L('sub')+(EN()?' — ':'، ')+L('pick');text(s2,W/2,126,{size:fz(s2,17,FONT,0,W-40),color:'#c9cdf2',align:'center'});}
       this.items().forEach((it,i)=>this.card(it,i===0?W/2+12:W/2-12-270,148,270,272,false));
-      drawRS(W/2,424,30);
+      drawRS(W/2,427,24);
       text(ptrType==='mouse'?L('click'):L('touch'),W/2,472,{size:14,color:'rgba(220,224,255,.65)',align:'center'});
     }
     {const z=PORT?1.5:1,w=54*z,h=26*z,x=GW-14-w,y=PORT?10:8;rrect(x,y,w,h,h/2);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fill();ctx.strokeStyle='rgba(201,205,242,.55)';ctx.stroke();text(L('lang'),x+w/2,y+h*.7,{size:15*z,bold:true,color:'#c9cdf2',align:'center',font:FONT});area([x,y,w,h],()=>this.toggleLang())}
@@ -1030,4 +1030,6 @@ NI.addEventListener('blur',()=>setTimeout(fit,300));fit();
 })();
 })();
 </script>
+<style>html{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))!important}#vc{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;background:#05060f;border-top:1px solid rgba(255,210,74,.25);color:#c9cdf2;font:12px Cairo,Tahoma,sans-serif;pointer-events:none;z-index:5}#vc b{color:#ffd24a;font-weight:700;min-width:2ch}</style>
+<div id="vc" dir="rtl"><span id="vcl">عدد الزوار:</span> <b id="vcn">…</b></div><script>(function(){var n=document.getElementById("vcn"),l=document.getElementById("vcl");var en=false;try{en=localStorage.getItem("tyk-lang")==="\"en\""}catch(e){}var AD="\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669";function fmt(v){return en?String(v):String(v).replace(/\d/g,function(d){return AD[d]})}if(en){l.textContent="Visitors:";document.getElementById("vc").dir="ltr"}fetch("https://abacus.jasoncameron.dev/hit/tyk-abu00salman/visits").then(function(r){return r.json()}).then(function(d){n.textContent=fmt(d.value)}).catch(function(){n.textContent="—"});})();</script>
 </body></html>
