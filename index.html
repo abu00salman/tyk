@@ -38,15 +38,21 @@ const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
 function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 function star8(x,y,r){ctx.beginPath();for(let k=0;k<2;k++){for(let j=0;j<4;j++){const a=k*Math.PI/4+j*Math.PI/2,px=x+r*Math.cos(a),py=y+r*Math.sin(a);j?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath()}ctx.stroke()}
 function fsIcon(x,y,c){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=2;ctx.lineCap='round';const s=16,l=5;ctx.beginPath();
-  [[0,0,1,1],[s,0,-1,1],[0,s,1,-1],[s,s,-1,-1]].forEach(([px,py,dx,dy])=>{ctx.moveTo(x+px,y+py+dy*l);ctx.lineTo(x+px,y+py);ctx.lineTo(x+px+dx*l,y+py)});ctx.stroke();ctx.restore()}
+  const q=FS.on?4:0;
+  [[0,0,1,1],[s,0,-1,1],[0,s,1,-1],[s,s,-1,-1]].forEach(([px,py,dx,dy])=>{const vx=x+px+dx*q,vy=y+py+dy*q;if(q){ctx.moveTo(vx,vy+dy*-l);ctx.lineTo(vx,vy);ctx.lineTo(vx-dx*l,vy)}else{ctx.moveTo(x+px,y+py+dy*l);ctx.lineTo(x+px,y+py);ctx.lineTo(x+px+dx*l,y+py)}});ctx.stroke();ctx.restore()}
+let FILL=false;
 const FS={
-  get ok(){const d=document.documentElement;return !!(d.requestFullscreen||d.webkitRequestFullscreen)},
-  get on(){return !!(document.fullscreenElement||document.webkitFullscreenElement)},
-  toggle(){const d=document.documentElement;
-    try{if(this.on){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
-    else{const p=(d.requestFullscreen||d.webkitRequestFullscreen).call(d);
-      const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}};
-      if(p&&p.then)p.then(lock).catch(()=>{});else lock()}}catch(e){}}
+  ok:true,native:false,
+  get on(){return FILL},
+  toggle(){const d=document.documentElement;FILL=!FILL;
+    try{
+      if(FILL){const rq=d.requestFullscreen||d.webkitRequestFullscreen;
+        if(rq){this.native=true;const p=rq.call(d);
+          const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}};
+          if(p&&p.then)p.then(lock).catch(()=>{this.native=false});else lock()}}
+      else if(this.native||document.fullscreenElement||document.webkitFullscreenElement){this.native=false;(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
+    }catch(e){}
+    fit()}
 };
 let S=1;
 const DEBUG=/debug/.test(location.search);
@@ -980,13 +986,15 @@ function fit(){
   const dpr=window.devicePixelRatio||1;let k;
   PORT=ah>aw*1.12;
   if(PORT){GW=640;k=aw/GW;GH=Math.max(820,Math.floor(ah/k))}else{GW=640;GH=480;k=Math.max(.2,Math.min(aw/W,ah/H))}
-  S=Math.max(1,Math.min(3.2,k*dpr));
+  const stretch=FILL&&!PORT;
+  S=Math.max(1,Math.min(3.2,(stretch?Math.max(aw/W,ah/H):k)*dpr));
   cv.width=Math.round(GW*S);cv.height=Math.round(GH*S);
-  cv.style.width=Math.floor(GW*k)+'px';cv.style.height=Math.floor(GH*k)+'px';
-  cv.style.borderRadius=!PORT&&aw>W*k+8?'6px':'0';cv.style.boxShadow=PORT?'none':'';
+  cv.style.width=stretch?aw+'px':Math.floor(GW*k)+'px';cv.style.height=stretch?ah+'px':Math.floor(GH*k)+'px';
+  cv.style.borderRadius=!stretch&&!PORT&&aw>W*k+8?'6px':'0';cv.style.boxShadow=PORT||stretch?'none':'';
 }
 addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,250));
-document.addEventListener('fullscreenchange',fit);document.addEventListener('webkitfullscreenchange',fit);
+const fsch=()=>{if(FS.native&&!(document.fullscreenElement||document.webkitFullscreenElement)){FS.native=false;FILL=false}fit()};
+document.addEventListener('fullscreenchange',fsch);document.addEventListener('webkitfullscreenchange',fsch);
 NI.addEventListener('blur',()=>setTimeout(fit,300));fit();
 
 /* ---------- boot ---------- */
