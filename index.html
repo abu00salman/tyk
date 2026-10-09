@@ -625,6 +625,19 @@ const TopicAnn={
 
 /* ----- question dialog ----- */
 Object.assign(TopicAnn,{box:[204,222]});
+const rg=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i),sq=(p,l)=>l.map(i=>p+i);
+const REACT={
+  1:{ok:sq('animate_sord',rg(1,3)),bad:sq('animate_sord',rg(4,7)),dur:[3.0,2.24]},
+  2:{ok:sq('animate_geogra',rg(13,17)),bad:sq('animate_geogra',rg(1,12)),dur:[2.37,1.93]},
+  3:{ok:sq('animate_lit',rg(1,6)),bad:sq('animate_lit',rg(7,10)),dur:[.85,.9]},
+  4:{ok:sq('animate_cup',[...rg(1,6),11,12]),bad:sq('animate_cup',rg(7,10)),dur:[2.46,2.79]},
+  5:{ok:sq('animate_art',rg(1,5)),bad:sq('animate_art',rg(6,18)),dur:[4.27,2.54]},
+  6:{ok:sq('animate_ch',rg(1,8)),bad:sq('animate_ch',rg(9,22)),dur:[2.71,2.02]},
+  7:{ok:sq('animate_eye',rg(1,9)),bad:sq('animate_man',rg(1,5)),dur:[2.97,2.91]},
+  8:{ok:sq('animate_tlamp',rg(1,16)),bad:sq('animate_flamp',rg(1,12)),dur:[5.0,2.06]},
+  9:{ok:sq('animate_rlg',rg(1,2)),bad:sq('animate_rlg',rg(3,4)),dur:[3.45,1.99]},
+  10:{ok:sq('animate_inv',rg(7,9)),bad:sq('animate_inv',rg(1,6)),dur:[5.0,2.55]}
+};
 const Q={
   enter(q,secs,who,done){
     this.q=q;this.secs=secs;this.who=who;this.done=done;this.t0=performance.now();this.sel=null;this.fin=false;
@@ -643,7 +656,11 @@ const Q={
     rect(fx+30,fy+18+wy,fw-60,7,win?'#404040':'#6b3b00');rect(fx+31,fy+19+wy,Math.round((fw-62)*left/this.secs),5,left<this.secs/3?'#e02000':(win?'#00c000':'#ffd24a'));
     rect(fx+30,fy+28+wy,30,19,'#808000');digits(String(Math.ceil(left)).padStart(2,'0'),fx+33,fy+29+wy);
     let tx=fx+fw-34,tw=fw-70,icB=0;const icY=fy+(win?32:40);
-    if(this.tp){const ic=IMG[this.tp.icon];if(ic){const sc=Math.min(1,54/ic.height),iw=Math.round(ic.width*sc),ih=Math.round(ic.height*sc);ctx.drawImage(ic,Math.round(fx+fw-28-iw),icY,iw,ih);tx=fx+fw-28-iw-10;tw=fw-70-iw-6;icB=icY+ih}}
+    if(this.tp){const ic=IMG[this.tp.icon];if(ic){const sc=Math.min(1,54/ic.height),iw=Math.round(ic.width*sc),ih=Math.round(ic.height*sc);
+      let fr=null;if(R&&R.seq){const k=Math.min(R.seq.length-1,Math.floor((performance.now()-R.t0)/1000/R.per));fr=IMG[R.seq[k]]}
+      if(fr){const s2=Math.min(1,54/fr.height,64/fr.width),w2=Math.round(fr.width*s2),h2=Math.round(fr.height*s2);ctx.drawImage(fr,Math.round(fx+fw-28-iw/2-w2/2),Math.round(icY+ih/2-h2/2),w2,h2)}
+      else ctx.drawImage(ic,Math.round(fx+fw-28-iw),icY,iw,ih);
+      tx=fx+fw-28-iw-10;tw=fw-70-iw-6;icB=icY+ih}}
     let qTop=fy+(win?36:40);
     if(this.who){text('السؤال لـ: '+this.who,tx,qTop+16,{size:14,bold:true,color:T.hi,align:'right'});qTop+=20}
     const rows=mc?this.opts.map(o=>o.t):['صواب','خطأ'],n=rows.length,ab=fy+fh-(win?58:60),rowMin=mc?25:29;
@@ -667,10 +684,14 @@ const Q={
     if(!R)button(fx+fw/2-39,fy+fh-54,'intrface_200',()=>this.submit());
     else{const m=R.ok?'إجابة صحيحة':(R.timeout?'انتهى الوقت، والصحيحة بالأخضر':'الإجابة الصحيحة بالأخضر');text(m,fx+fw/2,fy+fh-(win?24:28),{size:18,bold:true,align:'center',color:R.ok?'#137a2e':'#9a1a0c'})}
     if(!R&&left<=0)this.reveal(false,true);
-    if(R&&!this.fin&&performance.now()-R.t0>(R.ok?950:2000))this.finish(R.ok,R.timeout,R.e);
+    if(R&&!this.fin&&performance.now()-R.t0>Math.max(R.ok?950:2000,R.hold?R.hold*1000+450:0))this.finish(R.ok,R.timeout,R.e);
   },
   reveal(ok,timeout,e){if(this.rev||this.fin)return;this.rev={ok,timeout,e,t0:performance.now(),left:Math.max(0,this.secs-this.elapsed())};
-    if(this.snd){try{this.snd.stop()}catch(x){}this.snd=null}buzz(ok?20:[40,60,40])},
+    if(this.snd){try{this.snd.stop()}catch(x){}this.snd=null}buzz(ok?20:[40,60,40]);
+    const rc=this.tp&&REACT[this.tp.id];
+    if(rc){const seq=(ok?rc.ok:rc.bad).filter(n=>IMG[n]);
+      if(seq.length){const total=Math.min(rc.dur[ok?0:1],3.4);this.rev.seq=seq;this.rev.per=total/seq.length;this.rev.hold=total;
+        this.snd=play('topch'+this.tp.id+(ok?1:2),{vol:.8})}}},
   click(){const R=this.rev;if(R&&!this.fin&&performance.now()-R.t0>350)this.finish(R.ok,R.timeout,R.e)},
   submit(){if(this.sel==null||this.rev)return;const e=this.elapsed();const ok=this.q.t==='mc'?this.opts[this.sel].ok:(this.sel===0)===this.q.a;this.reveal(ok,false,e)},
   finish(ok,timeout,e){
@@ -848,13 +869,13 @@ const Game={
       if(res.ok&&joker&&this.pl.length===1)pts*=2;
       if(res.ok){p.score+=pts;this.passDoor(d,pts,joker)}
       else{
-        play('to');let m=res.timeout?'انتهى الوقت!':'إجابة خاطئة!';
+        if(!ED.topics)play('to');let m=res.timeout?'انتهى الوقت!':'إجابة خاطئة!';
         if(joker){if(this.pl.length===2){this.pl[1-this.cur].score+=30;m+='\nفقدت البطاقة البيضاء وأضيفت ٣٠ درجة إلى خصمك.'}else m+='\nفقدت البطاقة البيضاء.'}
         msg(m,()=>this.endTurn());
       }
     });
     const tp=ED.topics?TOPICS.find(t=>t.id===q.c):null;
-    if(tp)push(TopicAnn,tp,ask1);else ask1();
+    ask1();
   },
   passDoor(d,pts,joker){
     const p=this.pl[this.cur];p.passed[d.id]=1;
