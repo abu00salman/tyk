@@ -1,0 +1,12 @@
+{
+  "appId": "com.randomselection.ikhtabir",
+  "appName": "اختبر معلوماتك",
+  "webDir": "www",
+  "backgroundColor": "#05060f",
+  "android": { "backgroundColor": "#05060f", "allowMixedContent": false },
+  "ios": { "backgroundColor": "#05060f", "contentInset": "never", "scrollEnabled": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 4000, "launchAutoHide": false, "backgroundColor": "#05060f", "showSpinner": false, "androidScaleType": "CENTER_CROP" },
+    "StatusBar": { "style": "DARK", "backgroundColor": "#05060f", "overlaysWebView": false }
+  }
+}

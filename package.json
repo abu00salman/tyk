@@ -1,0 +1,42 @@
+{
+  "name": "ikhtabir-maalomatak",
+  "productName": "Ikhtabir Maalomatak",
+  "version": "1.0.0",
+  "description": "اختبر معلوماتك ١ و٢ — لعبة المتاهة والأسئلة",
+  "author": "Random Selection",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "prepare-web": "node -e \"require('fs').mkdirSync('www',{recursive:true});require('fs').copyFileSync('index.html','www/index.html')\"",
+    "desktop": "npm run prepare-web && electron .",
+    "dist:win": "npm run prepare-web && electron-builder --win",
+    "dist:mac": "npm run prepare-web && electron-builder --mac"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.randomselection.ikhtabir",
+    "productName": "Ikhtabir Maalomatak",
+    "copyright": "© Random Selection",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["electron/**", "www/**", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "اختبر معلوماتك", "artifactName": "Ikhtabir-Setup-${version}.exe" },
+    "portable": { "artifactName": "Ikhtabir-Portable-${version}.exe" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "icon": "build/icon.png", "category": "public.app-category.trivia-games", "identity": null, "artifactName": "Ikhtabir-${version}.dmg" },
+    "dmg": { "title": "اختبر معلوماتك" }
+  }
+}
