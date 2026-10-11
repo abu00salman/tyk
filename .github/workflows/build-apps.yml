@@ -1,0 +1,111 @@
+name: بناء التطبيقات
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android (APK + AAB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - run: npm install
+      - run: npm run prepare-web
+      - run: npx cap add android
+      - run: npx capacitor-assets generate --android --iconBackgroundColor '#05060f' --splashBackgroundColor '#05060f'
+      - run: npx cap sync android
+      - name: Build
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x gradlew
+          mkdir -p ../out
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ../release.jks
+            ./gradlew assembleRelease bundleRelease
+            BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+            $BT/zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+            $BT/apksigner sign --ks ../release.jks --ks-pass env:KS_PASS --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASS --out ../out/Ikhtabir.apk aligned.apk
+            cp app/build/outputs/bundle/release/app-release.aab ../out/Ikhtabir.aab
+            jarsigner -keystore ../release.jks -storepass "$KS_PASS" -keypass "$KEY_PASS" ../out/Ikhtabir.aab "$KEY_ALIAS"
+          else
+            ./gradlew assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk ../out/Ikhtabir.apk
+          fi
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: out/* }
+
+  ios:
+    name: iPhone (IPA غير موقّع)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - run: npm run prepare-web
+      - run: npx cap add ios --packagemanager SPM
+      - run: npx capacitor-assets generate --ios --splashBackgroundColor '#05060f'
+      - run: npx cap sync ios
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          mkdir -p Payload out
+          cp -R build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -qr out/Ikhtabir-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with: { name: ios, path: out/* }
+
+  desktop:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, label: Windows, cmd: dist:win }
+          - { os: macos-latest, label: Mac, cmd: dist:mac }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - run: npm run ${{ matrix.cmd }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+
+  release:
+    name: نشر الإصدار
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, ios, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: files, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: اختبر معلوماتك ${{ github.ref_name }}
+          files: files/*
