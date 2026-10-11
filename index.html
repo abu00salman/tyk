@@ -20,6 +20,7 @@
 (function(){
 const W=640,H=480;
 let GW=640,GH=480,PORT=false;let INST=0,INSB=0,TOPPAD=10,MAZEB=TOPPAD+392;
+const IS_TV=/Android/i.test(navigator.userAgent)&&!(navigator.maxTouchPoints>0)||/\b(TV|AFT[A-Z]*|BRAVIA|SmartTV|GoogleTV)\b/i.test(navigator.userAgent);
 let DOCK={y:0,h:480};
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const _di=ctx.drawImage.bind(ctx);
@@ -973,6 +974,9 @@ function doFrame(){
     DOCK=PORT?{y:MAZEB,h:(scene===Game?GH-10-INSB-Game.hudH()-8:GH-10-INSB)-MAZEB}:{y:0,h:480};
     if(PORT&&scene.center&&s===scene){TB();ctx.translate(0,Math.round((GH-480)/2))}else TC();
     s.draw();
+    if(RM){const b=focBtn();if(b){const r=b.r,p=5,a=.65+.35*Math.sin(performance.now()/220);TB();ctx.save();
+      rrect(r[0]-p,r[1]-p,r[2]+p*2,r[3]+p*2,8);ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,.6)';ctx.stroke();
+      ctx.shadowColor='#ffd24a';ctx.shadowBlur=14;ctx.lineWidth=3;ctx.strokeStyle='rgba(255,226,110,'+a+')';ctx.stroke();ctx.restore()}}
     const fa=(performance.now()-fadeT)/1000;
     if(fa<.32&&!REDUCED){TB();ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,'+(1-fa/.32)+')';ctx.fillRect(0,0,GW,GH)}
   }catch(e){console.error(e)}
@@ -999,7 +1003,29 @@ cv.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'){mouse.gx=mous
 cv.addEventListener('click',()=>{if(top()===NameDlg)NI.focus()});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('visibilitychange',()=>{if(!AC)return;try{document.hidden?AC.suspend():AC.resume()}catch(e){}});
-window.addEventListener('keydown',e=>{const s=top();if(s.key){if(s!==NameDlg&&(e.key==='Backspace'||e.key===' '))e.preventDefault();s.key(e)}});
+let RM=IS_TV,FOC=null;
+const bc=r=>({x:r[0]+r[2]/2,y:r[1]+r[3]/2});
+function focBtn(){if(!FOC||!btns.length)return null;let best=null,bd=1e9;for(const b of btns){const c=bc(b.r),d=Math.hypot(c.x-FOC.x,c.y-FOC.y);if(d<bd){bd=d;best=b}}return best}
+function defBtn(){let best=null,bd=1e9;const cx=GW/2,cy=GH/2;for(const b of btns){const c=bc(b.r),d=Math.hypot(c.x-cx,c.y-cy);if(d<bd){bd=d;best=b}}return best}
+function navMove(dir){
+  const cur=focBtn();if(!cur){const d=defBtn();if(d)FOC=bc(d.r);return}
+  const c=bc(cur.r);let best=null,bs=1e9;
+  for(const b of btns){if(b===cur)continue;const p=bc(b.r),dx=p.x-c.x,dy=p.y-c.y;
+    const main=dir==='L'?-dx:dir==='R'?dx:dir==='U'?-dy:dy,ort=(dir==='L'||dir==='R')?dy:dx;
+    if(main<=4)continue;const sc=main+Math.abs(ort)*2.2;if(sc<bs){bs=sc;best=b}}
+  if(best){FOC=bc(best.r);try{play('click',{vol:.2})}catch(x){}}
+}
+const KD={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D',Left:'L',Right:'R',Up:'U',Down:'D'},KC={37:'L',39:'R',38:'U',40:'D',21:'L',22:'R',19:'U',20:'D'};
+window.addEventListener('keydown',e=>{
+  const s=top();
+  if(document.activeElement===NI){if(s.key)s.key(e);return}
+  const d=KD[e.key]||KC[e.keyCode];
+  if(d){e.preventDefault();RM=true;mouse.gx=mouse.gy=-1;if(!focBtn()){const b=defBtn();if(b)FOC=bc(b.r)}else navMove(d);return}
+  const ok=e.key==='Enter'||e.key===' '||e.keyCode===13||e.keyCode===23||e.keyCode===66;
+  if(ok&&RM){const b=focBtn();if(b){e.preventDefault();if(AC&&AC.state==='suspended'){try{AC.resume()}catch(x){}}b.onClick();return}}
+  if(s.key){if(s!==NameDlg&&(e.key==='Backspace'||e.key===' '))e.preventDefault();s.key(e)}
+});
+cv.addEventListener('pointerdown',()=>{RM=false},true);
 function fit(){
   if(document.activeElement===NI&&ptrType!=='mouse')return;
   const de=document.documentElement,cs=getComputedStyle(de),pf=v=>parseFloat(cs[v])||0;
@@ -1010,7 +1036,7 @@ function fit(){
   if(PORT){GW=640;k=aw/GW;GH=Math.max(820,Math.floor(ah/k));INST=st/k;INSB=sb/k}else{GW=640;GH=480;k=Math.max(.2,Math.min(aw/W,(ah-st-sb)/H));INST=INSB=0}
   TOPPAD=10+INST;MAZEB=TOPPAD+392;
   const stretch=FILL&&!PORT;
-  S=Math.max(1,Math.min(3.2,(stretch?Math.max(aw/W,ah/H):k)*dpr));
+  S=Math.max(1,Math.min(IS_TV?2:3.2,(stretch?Math.max(aw/W,ah/H):k)*dpr));
   cv.width=Math.round(GW*S);cv.height=Math.round(GH*S);
   cv.style.width=stretch?aw+'px':Math.floor(GW*k)+'px';cv.style.height=stretch?ah+'px':Math.floor(GH*k)+'px';
   cv.style.borderRadius=!stretch&&!PORT&&aw>W*k+8?'6px':'0';cv.style.boxShadow=PORT||stretch?'none':'';
