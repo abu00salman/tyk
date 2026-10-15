@@ -43,7 +43,7 @@ function fsIcon(x,y,c){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=2;ctx.lineCap=
   [[0,0,1,1],[s,0,-1,1],[0,s,1,-1],[s,s,-1,-1]].forEach(([px,py,dx,dy])=>{const vx=x+px+dx*q,vy=y+py+dy*q;if(q){ctx.moveTo(vx,vy+dy*-l);ctx.lineTo(vx,vy);ctx.lineTo(vx-dx*l,vy)}else{ctx.moveTo(x+px,y+py+dy*l);ctx.lineTo(x+px,y+py);ctx.lineTo(x+px+dx*l,y+py)}});ctx.stroke();ctx.restore()}
 let FILL=false;
 const FS={
-  ok:true,native:false,
+  ok:false,native:false,
   get on(){return FILL},
   toggle(){const d=document.documentElement;FILL=!FILL;
     try{
@@ -643,7 +643,7 @@ const Q={
   enter(q,secs,who,done){
     this.q=q;this.secs=secs;this.who=who;this.done=done;this.t0=performance.now();this.sel=null;this.fin=false;
     this.tp=ED.topics?TOPICS.find(t=>t.id===q.c):null;this.snd=null;this.rev=null;
-    if(!ED.topics)this.snd=play('topch'+(1+Math.floor(Math.random()*10))+'1',{vol:.5});
+    this.sid=1+Math.floor(Math.random()*10);
     if(q.t==='mc')this.opts=shuffle(q.o.map((t,i)=>({t,ok:i===0})));
   },
   elapsed(){return (performance.now()-this.t0)/1000},
@@ -692,7 +692,8 @@ const Q={
     const rc=this.tp&&REACT[this.tp.id];
     if(rc){const seq=(ok?rc.ok:rc.bad).filter(n=>IMG[n]);
       if(seq.length){const total=Math.min(rc.dur[ok?0:1],3.4);this.rev.seq=seq;this.rev.per=total/seq.length;this.rev.hold=total;
-        this.snd=play('topch'+this.tp.id+(ok?1:2),{vol:.8})}}},
+        this.snd=play('topch'+this.tp.id+(ok?1:2),{vol:.8})}}
+    else if(!ED.topics)this.snd=play('topch'+this.sid+(ok?1:2),{vol:.8})},
   click(){const R=this.rev;if(R&&!this.fin&&performance.now()-R.t0>350)this.finish(R.ok,R.timeout,R.e)},
   submit(){if(this.sel==null||this.rev)return;const e=this.elapsed();const ok=this.q.t==='mc'?this.opts[this.sel].ok:(this.sel===0)===this.q.a;this.reveal(ok,false,e)},
   finish(ok,timeout,e){
